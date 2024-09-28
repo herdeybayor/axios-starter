@@ -1,22 +1,34 @@
 import { useCallback, useEffect, useState } from "react";
 
-export interface useQueryProps {
+export interface UseQueryProps {
     url: string;
+    suspense?: boolean;
 }
 
-export function useQuery({ url }: useQueryProps) {
+// Define the return types for Suspense and non-Suspense cases
+type NonSuspenseReturn<T> = {
+    loading: boolean;
+    errorMessage: string;
+    data: T | null;
+};
+
+type SuspenseReturn<T> = [
+    () => Promise<void>, // fetchQuery function
+    NonSuspenseReturn<T>
+];
+
+export function useQuery<T = any>({ url, suspense = false }: UseQueryProps): SuspenseReturn<T> | NonSuspenseReturn<T> {
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState("");
-    const [data, setData] = useState(null);
+    const [data, setData] = useState<T | null>(null);
 
     const fetchQuery = useCallback(async () => {
         try {
             setLoading(true);
-            await new Promise((resolve) => setTimeout(resolve, 3000));
+            await new Promise((resolve) => setTimeout(resolve, 3000)); // simulate delay
             const res = await fetch(url);
-            const data = await res.json();
-            setData(data);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result: T = await res.json(); // type the data as T
+            setData(result);
         } catch (error: any) {
             console.log({ error });
             setErrorMessage(error?.message || "An error occurred");
@@ -26,8 +38,16 @@ export function useQuery({ url }: useQueryProps) {
     }, [url]);
 
     useEffect(() => {
-        fetchQuery();
-    }, [fetchQuery]);
+        // only fetch if suspense is false
+        if (!suspense) {
+            fetchQuery();
+        }
+    }, [suspense, fetchQuery]);
 
-    return { loading, errorMessage, data: data || [] };
+    // Conditional return types based on suspense
+    if (suspense) {
+        return [fetchQuery, { loading, errorMessage, data }];
+    } else {
+        return { loading, errorMessage, data };
+    }
 }

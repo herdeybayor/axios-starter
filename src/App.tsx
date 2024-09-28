@@ -1,31 +1,11 @@
-import { useCallback, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "./hooks/use-query";
 
 const baseUrl = "https://jsonplaceholder.typicode.com";
 
 function App() {
-    const [loading, setLoading] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("");
-    const [todos, setTodos] = useState([]);
-
     const { data: users, errorMessage: userError, loading: loadingUser } = useQuery({ url: `${baseUrl}/users` });
-
-    const fetchTodos = useCallback(async (baseUrl: string) => {
-        try {
-            setLoading(true);
-            await new Promise((resolve) => setTimeout(resolve, 3000));
-            const res = await fetch(`${baseUrl}/todos`);
-            const data = await res.json();
-            setTodos(data);
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } catch (error: any) {
-            console.log({ error });
-            setErrorMessage(error?.message || "An error occurred");
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+    const [fetchTodos, { data: todos, errorMessage, loading }] = useQuery({ url: `${baseUrl}/todos`, suspense: true });
 
     if (loadingUser) {
         return (
@@ -51,7 +31,7 @@ function App() {
             )}
             <h1 className="text-3xl font-bold underline">Users</h1>
             <ul>
-                {users.map((user: { id: number; name: string }) => (
+                {users?.map((user: { id: number; name: string }) => (
                     <li key={user.id}>{user.name}</li>
                 ))}
             </ul>
@@ -62,7 +42,7 @@ function App() {
 
             <h1 className="text-3xl font-bold underline">Todos</h1>
             <ul>
-                {todos.map((todo: { id: number; title: string }) => (
+                {todos?.map((todo: { id: number; title: string }) => (
                     <li key={todo.id}>{todo.title}</li>
                 ))}
             </ul>
