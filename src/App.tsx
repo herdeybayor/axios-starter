@@ -1,11 +1,48 @@
+import { useCallback, useState } from "react";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
+
 import { useQuery } from "./hooks/use-query";
+import { $http } from "./http/xhr";
+import { ApiV1AuthRegister } from "./http";
 
 const baseUrl = "https://jsonplaceholder.typicode.com";
 
+// async function createUser() {
+//     const payload = { id: "20", name: "Musk" };
+//     const res = await fetch("https://jsonplaceholder.typicode.com/users", {
+//         method: "POST",
+//         body: JSON.stringify(payload)
+//     });
+//     return await res.json();
+// }
+
+async function createUser() {
+    const payload = { id: "20", name: "Musk" };
+    const res = await ApiV1AuthRegister(payload);
+    return res.data;
+}
+
 function App() {
+    const [loading, setLoading] = useState(false);
+    const [errorMessage, setErrorMessage] = useState("");
+    const [todos, setTodos] = useState([]);
+
     const { data: users, errorMessage: userError, loading: loadingUser } = useQuery({ url: `${baseUrl}/users` });
-    const [fetchTodos, { data: todos, errorMessage, loading }] = useQuery({ url: `${baseUrl}/todos`, suspense: true });
+
+    const fetchTodos = useCallback(async (baseUrl: string) => {
+        try {
+            setLoading(true);
+            await new Promise((resolve) => setTimeout(resolve, 3000));
+            const { data } = await axios.get(`${baseUrl}/todos`);
+            setTodos(data);
+        } catch (error: any) {
+            console.log({ error });
+            setErrorMessage(error?.message || "An error occurred");
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
     if (loadingUser) {
         return (
